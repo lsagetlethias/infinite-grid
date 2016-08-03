@@ -1,0 +1,26 @@
+{
+  "name": "infinite-grid",
+  "version": "0.0.1",
+  "description": "InfiniteGrid layout",
+  "author": "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com> (http://github.com/bios21)",
+  "license": "MIT",
+  "devDependencies": {
+    "babel": "^6.5.2",
+    "babel-cli": "^6.10.1",
+    "babel-polyfill": "^6.9.1",
+    "babel-preset-es2015": "^6.9.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-clean": "^0.3.2",
+    "gulp-clean-css": "^2.0.12",
+    "gulp-concat": "^2.6.0",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-uglify": "^2.0.0"
+  },
+  "keywords": [
+    "infinite",
+    "grid",
+    "layout",
+    "vanilla"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "infinite-grid",
+  "authors": [
+    "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com>"
+  ],
+  "description": "InfiniteGrid layout",
+  "main": [
+    "bin/build.js",
+    "bin/build.css"
+  ],
+  "license": "MIT",
+  "homepage": "http://github.com/bios21/infinite-grid",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "dist"
+  ],
+  "keywords": [
+    "infinite",
+    "grid",
+    "layout",
+    "vanilla"
+  ]
+}

@@ -1,0 +1,30 @@
+@charset "UTF-8";
+#IG-mover,
+#IG-mover:before,
+#IG-mover:after,
+.IG-tile,
+.IG-tile:before,
+.IG-tile:after,
+.IG-tileContent,
+.IG-tileContent:before,
+.IG-tileContent:after {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+#IG-mover {
+    width: inherit;
+    height: inherit;
+    border-collapse: collapse;
+}
+
+.IG-tile {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /*vertical-align: top;*/
+    padding: 0;
+    margin: 0;
+}
