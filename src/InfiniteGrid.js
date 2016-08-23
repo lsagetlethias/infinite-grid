@@ -30,6 +30,10 @@ var _exports = window;
          * @return {String} - The string template of the tile
          */
         /**
+         * onRelease callback
+         * @callback onReleaseCallback
+         */
+        /**
          * Construct a new Infinite grid
          *
          * @param {HTMLElement} container - The container element
@@ -43,6 +47,7 @@ var _exports = window;
          * @param {!number} [options.containerSize.height=600]
          * @param {number} [options.limit=300] - The max number of tile created before using cache
          * @param {tileTemplateCallback} [options.tileTemplate] - A function given to generate each tile
+         * @param {onReleaseCallback} [options.onRelease] - A function given called when the grid stop moving
          */
         constructor(container, options) {
             this.MOVER = Utils.setAttributes(document.createElement('table'), {'id': _ID_MOVER});
@@ -63,7 +68,8 @@ var _exports = window;
                         style="background: url(http://placehold.it/${this.opts.tileSize.width}x${this.opts.tileSize.height}?text=ID:${tileNumber})"
                         id="${_CLASS_TILE_CONTENT}${tileNumber}"
                         class="${_CLASS_TILE_CONTENT}">&nbsp;</div>`;
-                }
+                },
+                onRelease: () => {}
             };
             if (options) {
                 this.opts = Utils.extend(this.opts, options)
@@ -145,7 +151,7 @@ var _exports = window;
                     );
                     this.count++;
 
-                    if (!leftRightInited && i < this.MAX_BY_LINE) {
+                    if (!leftRightInited && i < this.MAX_BY_COLUMN) {
                         let currentRow = document.getElementById(`${_CLASS_ROW}${i}`),
                             first = null;
                         for (let buf = this.opts.buffer; buf--;) {
@@ -381,7 +387,7 @@ var _exports = window;
                         that.prevTranslate = that.newTranslate;
                     } else {
                         if (that.justUpped) {
-                            console.log('wesh');
+                            that.opts.onRelease && that.opts.onRelease();
                         }
                         that.justUpped = false;
                     }

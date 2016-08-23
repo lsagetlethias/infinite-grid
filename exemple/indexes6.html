@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>InfiniteGrid example</title>
+
+    <link href="../bin/build.css" rel="stylesheet">
+    <style>
+        html {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+        *, *:before, *:after {
+            -webkit-box-sizing: inherit;
+            -moz-box-sizing: inherit;
+            box-sizing: inherit;
+        }
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: darkgrey;
+        }
+
+        #container {
+            width: 1920px;
+            height: 980px;
+            border: 1px solid black;
+            margin: 25px auto;
+            background: white;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <script src="../src/InfiniteGrid.js"></script>
+    <script>
+        ;(root => {
+            const InfiniteGrid = root.InfiniteGrid;
+
+            const IG = new InfiniteGrid(document.querySelector('#container'), {
+                containerSize: {
+                    width: 1920,
+                    height: 980
+                },
+                tileSize: {
+                    width: 1920 / 5,
+                    height: 980 / 4
+                },
+                buffer: 1
+            });
+            console.log(IG);
+        })(window);
+    </script>
+</body>
+</html>
