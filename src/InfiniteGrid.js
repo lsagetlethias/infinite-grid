@@ -207,7 +207,7 @@ var _exports = window;
 
                 return false;
             });
-            Utils.addEventListenerMulti(document, 'mouseup touchend', e => {
+            Utils.addEventListenerMulti(this.MOVER, 'mouseup touchend', e => {
                 e.preventDefault();
                 this.down = false;
                 this.justUpped = true;
@@ -218,7 +218,7 @@ var _exports = window;
                 });
                 return false;
             });
-            Utils.addEventListenerMulti(document, 'mousemove touchmove', e => {
+            Utils.addEventListenerMulti(this.MOVER, 'mousemove touchmove', e => {
                 if (this.down) {
                     e.preventDefault();
                     this.delta = {
