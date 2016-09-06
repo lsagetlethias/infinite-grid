@@ -186,7 +186,6 @@ var _exports = window;
             //         offsetY: 0
             //     };
             Utils.addEventListenerMulti(this.MOVER, 'mousedown touchstart', e => {
-                e.preventDefault();
                 this.down = true;
                 this.justUpped = false;
                 this.baseCoord = {
@@ -207,8 +206,7 @@ var _exports = window;
 
                 return false;
             });
-            Utils.addEventListenerMulti(document, 'mouseup touchend', e => {
-                e.preventDefault();
+            Utils.addEventListenerMulti(this.MOVER, 'mouseup touchend', e => {
                 this.down = false;
                 this.justUpped = true;
 
@@ -218,9 +216,8 @@ var _exports = window;
                 });
                 return false;
             });
-            Utils.addEventListenerMulti(document, 'mousemove touchmove', e => {
+            Utils.addEventListenerMulti(this.MOVER, 'mousemove touchmove', e => {
                 if (this.down) {
-                    e.preventDefault();
                     this.delta = {
                         x: (e.touches ? e.touches[0] : e).clientX - this.baseCoord.x,
                         y: (e.touches ? e.touches[0] : e).clientY - this.baseCoord.y
