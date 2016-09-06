@@ -3,6 +3,7 @@
   "version": "0.0.3",
   "description": "InfiniteGrid layout",
   "author": "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com> (http://github.com/bios21)",
+  "contributors": ["Anthony Capirchio (http://github.com/AnthonyCapirchio)"]
   "license": "MIT",
   "devDependencies": {
     "babel": "^6.5.2",
