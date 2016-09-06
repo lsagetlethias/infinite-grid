@@ -206,7 +206,7 @@ var _exports = window;
 
                 return false;
             });
-            Utils.addEventListenerMulti(this.MOVER, 'mouseup touchend', e => {
+            Utils.addEventListenerMulti(document, 'mouseup touchend', e => {
                 this.down = false;
                 this.justUpped = true;
 
@@ -216,7 +216,7 @@ var _exports = window;
                 });
                 return false;
             });
-            Utils.addEventListenerMulti(this.MOVER, 'mousemove touchmove', e => {
+            Utils.addEventListenerMulti(document, 'mousemove touchmove', e => {
                 if (this.down) {
                     this.delta = {
                         x: (e.touches ? e.touches[0] : e).clientX - this.baseCoord.x,
