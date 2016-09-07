@@ -51,7 +51,11 @@ var _exports = window;
          */
         constructor(container, options) {
             this.MOVER = Utils.setAttributes(document.createElement('table'), {'id': _ID_MOVER});
-            container.appendChild(this.MOVER);
+            if( options.insertBefore ) {
+                container.insertBefore(this.MOVER, options.insertBefore);
+            } else {
+                container.appendChild(this.MOVER);
+            }
             this.opts = {
                 buffer: 4,
                 tileSize: {
