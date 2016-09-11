@@ -48,14 +48,10 @@ var _exports = window;
          * @param {number} [options.limit=300] - The max number of tile created before using cache
          * @param {tileTemplateCallback} [options.tileTemplate] - A function given to generate each tile
          * @param {onReleaseCallback} [options.onRelease] - A function given called when the grid stop moving
+         * @param {!HTMLElement} [options.insertBefore] - A function given called when the grid stop moving
          */
         constructor(container, options) {
             this.MOVER = Utils.setAttributes(document.createElement('table'), {'id': _ID_MOVER});
-            if( options.insertBefore ) {
-                container.insertBefore(this.MOVER, options.insertBefore);
-            } else {
-                container.appendChild(this.MOVER);
-            }
             this.opts = {
                 buffer: 4,
                 tileSize: {
@@ -73,10 +69,17 @@ var _exports = window;
                         id="${_CLASS_TILE_CONTENT}${tileNumber}"
                         class="${_CLASS_TILE_CONTENT}">&nbsp;</div>`;
                 },
-                onRelease: () => {}
+                onRelease: () => {},
+                insertBefore: null
             };
             if (options) {
                 this.opts = Utils.extend(this.opts, options)
+            }
+            this.container = container;
+            if(this.opts.insertBefore ) {
+                this.container.insertBefore(this.MOVER, options.insertBefore);
+            } else {
+                this.container.appendChild(this.MOVER);
             }
             TILE_TPL.style.width = `${this.opts.tileSize.width}px`;
             TILE_TPL.style.height = `${this.opts.tileSize.height}px`;
@@ -114,6 +117,12 @@ var _exports = window;
             this.delta = {x:0,y:0};
             this.newTranslate = this.baseCoord.translate;
 
+            let _subMD = this.onMouseDown,
+                _subMU = this.onMouseUp,
+                _subMM = this.onMouseMove;
+            this.onmousedownProxy = (e) => {_subMD(e)};
+            this.onmouseupProxy = (e) => {_subMU(e)};
+            this.onmousemoveProxy = (e) => {_subMM(e)};
             this.initEvents();
             /*--*/
 
@@ -189,49 +198,73 @@ var _exports = window;
             //         offsetX: 0,
             //         offsetY: 0
             //     };
-            Utils.addEventListenerMulti(this.MOVER, 'mousedown touchstart', e => {
-                this.down = true;
-                this.justUpped = false;
-                this.baseCoord = {
-                    x: (e.touches ? e.touches[0] : e).clientX,
-                    y: (e.touches ? e.touches[0] : e).clientY,
-                    translate: {
-                        x: parseInt(this.MOVER.getAttribute('data-translatex')),
-                        y: parseInt(this.MOVER.getAttribute('data-translatey'))
-                    }
-                };
-                this.delta = {x:0,y:0};
+            Utils.addEventListenerMulti(this.MOVER, 'mousedown touchstart', this.onmousedownProxy);
+            Utils.addEventListenerMulti(document, 'mouseup touchend', this.onmouseupProxy);
+            Utils.addEventListenerMulti(document, 'mousemove touchmove', this.onmousemoveProxy);
+        }
 
-                // EASE.offsetX = baseCoord.translate.x;
-                // EASE.offsetY = baseCoord.translate.y;
-                // animateEase = false;
-                // clearTimeout(time);
-                // time = null;
+        destroyEvents() {
+            Utils.removeEventListenerMulti(this.MOVER, 'mousedown touchstart', this.onmousedownProxy);
+            Utils.removeEventListenerMulti(document, 'mouseup touchend', this.onmouseupProxy);
+            Utils.removeEventListenerMulti(document, 'mousemove touchmove', this.onmousemoveProxy);
+        }
 
-                return false;
-            });
-            Utils.addEventListenerMulti(document, 'mouseup touchend', e => {
-                this.down = false;
-                this.justUpped = true;
-
-                Utils.setAttributes(this.MOVER, {
-                    'data-translatex': this.newTranslate.x,
-                    'data-translatey': this.newTranslate.y
-                });
-                return false;
-            });
-            Utils.addEventListenerMulti(document, 'mousemove touchmove', e => {
-                if (this.down) {
-                    this.delta = {
-                        x: (e.touches ? e.touches[0] : e).clientX - this.baseCoord.x,
-                        y: (e.touches ? e.touches[0] : e).clientY - this.baseCoord.y
-                    };
-
-                    // EASE.ms.tick(newTranslate.x, newTranslate.y);
-                    return false;
+        /**
+         * @param {Event} e
+         * @returns {boolean}
+         */
+        onMouseDown(e) {
+            this.down = true;
+            this.justUpped = false;
+            this.baseCoord = {
+                x: (e.touches ? e.touches[0] : e).clientX,
+                y: (e.touches ? e.touches[0] : e).clientY,
+                translate: {
+                    x: parseInt(this.MOVER.getAttribute('data-translatex')),
+                    y: parseInt(this.MOVER.getAttribute('data-translatey'))
                 }
-                return true;
+            };
+            this.delta = {x: 0, y: 0};
+
+            // EASE.offsetX = baseCoord.translate.x;
+            // EASE.offsetY = baseCoord.translate.y;
+            // animateEase = false;
+            // clearTimeout(time);
+            // time = null;
+
+            return false;
+        }
+
+        /**
+         * @param {Event} e
+         * @returns {boolean}
+         */
+        onMouseUp(e) {
+            this.down = false;
+            this.justUpped = true;
+
+            Utils.setAttributes(this.MOVER, {
+                'data-translatex': this.newTranslate.x,
+                'data-translatey': this.newTranslate.y
             });
+            return false;
+        }
+
+        /**
+         * @param {Event} e
+         * @returns {boolean}
+         */
+        onMouseMove(e) {
+            if (this.down) {
+                this.delta = {
+                    x: (e.touches ? e.touches[0] : e).clientX - this.baseCoord.x,
+                    y: (e.touches ? e.touches[0] : e).clientY - this.baseCoord.y
+                };
+
+                // EASE.ms.tick(newTranslate.x, newTranslate.y);
+                return false;
+            }
+            return true;
         }
 
         addTopRow() {
@@ -350,6 +383,27 @@ var _exports = window;
         //     // };
         // }
 
+        /**
+         * Destroy the Infinite grid, including events and requestAnimationFrame loop.
+         */
+        destroy() {
+            this.destroyEvents();
+            cancelAnimationFrame(this.RAFid);
+            delete this.RAFid;
+            for (let i in this.cacheTile) {
+                this.cacheTile[i] = null;
+                delete this.cacheTile[i];
+            }
+            this.cacheTile = null;
+            delete this.cacheTile;
+
+            this.container.removeChild(this.MOVER);
+            this.MOVER = null;
+            delete this.MOVER;
+            this.container = null;
+            delete this.container;
+        }
+
         render() {
             var that = this;
             var _innerRender = () => {
@@ -445,6 +499,20 @@ var _exports = window;
         }
 
         /**
+         * Set a function on multiple event to one element
+         *
+         * @param {HTMLElement|Node} el
+         * @param {String} events
+         * @param {Function} fn
+         * @returns {HTMLElement}
+         */
+        static removeEventListenerMulti(el, events, fn) {
+            events.split(' ').forEach(e => el.removeEventListener(e, fn));
+
+            return el;
+        }
+
+        /**
          * Generate an array of random plain integer which never be greter than maxIndex.
          * Give an generator function in return.
          *
@@ -453,6 +521,10 @@ var _exports = window;
          */
         static generateRandomIndexArray(maxIndex) {
             setTimeout(()=> {
+                if(Utils.THE_RANDOM_ARRAY.length) {
+                    Utils.THE_RANDOM_ARRAY = [];
+                    Utils.RANDOM_INDEX = Utils.RANDOM_SIZE_REFERENCE;
+                }
                 for (; Utils.RANDOM_INDEX--;) {
                     Utils.THE_RANDOM_ARRAY.push(Math.random()*maxIndex|0);
                 }
@@ -489,7 +561,8 @@ var _exports = window;
         }
     }
     Utils.THE_RANDOM_ARRAY = [];
-    Utils.RANDOM_INDEX = 1e6;
+    Utils.RANDOM_SIZE_REFERENCE = 1e6;
+    Utils.RANDOM_INDEX = Utils.RANDOM_SIZE_REFERENCE;
 
     InfiniteGrid.Utils = Utils;
     exports.InfiniteGrid = InfiniteGrid;
