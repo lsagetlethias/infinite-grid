@@ -522,11 +522,8 @@ var _exports = window;
         static generateRandomIndexArray(maxIndex) {
             setTimeout(()=> {
                 if(Utils.THE_RANDOM_ARRAY.length) {
-                    for (let i = 0; Utils.THE_RANDOM_ARRAY.length; i++) {
-                        Utils.THE_RANDOM_ARRAY[i] = null;
-                        delete Utils.THE_RANDOM_ARRAY[i];
-                    }
                     Utils.THE_RANDOM_ARRAY = [];
+                    Utils.RANDOM_INDEX = Utils.RANDOM_SIZE_REFERENCE;
                 }
                 for (; Utils.RANDOM_INDEX--;) {
                     Utils.THE_RANDOM_ARRAY.push(Math.random()*maxIndex|0);
@@ -564,7 +561,8 @@ var _exports = window;
         }
     }
     Utils.THE_RANDOM_ARRAY = [];
-    Utils.RANDOM_INDEX = 1e6;
+    Utils.RANDOM_SIZE_REFERENCE = 1e6;
+    Utils.RANDOM_INDEX = Utils.RANDOM_SIZE_REFERENCE;
 
     InfiniteGrid.Utils = Utils;
     exports.InfiniteGrid = InfiniteGrid;
