@@ -120,9 +120,10 @@ var _exports = window;
             let _subMD = this.onMouseDown,
                 _subMU = this.onMouseUp,
                 _subMM = this.onMouseMove;
-            this.onmousedownProxy = (e) => {_subMD(e)};
-            this.onmouseupProxy = (e) => {_subMU(e)};
-            this.onmousemoveProxy = (e) => {_subMM(e)};
+            var that = this;
+            this.onmousedownProxy = (e) => {_subMD.call(that, e)};
+            this.onmouseupProxy = (e) => {_subMU.call(that, e)};
+            this.onmousemoveProxy = (e) => {_subMM.call(that, e)};
             this.initEvents();
             /*--*/
 
