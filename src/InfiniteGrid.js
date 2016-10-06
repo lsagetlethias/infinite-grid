@@ -103,8 +103,18 @@ var _exports = window;
 
             this.init();
 
-
             /* EVENTS */
+
+            this.dragData = {
+                last_spot:{x: 0, y: 0},
+                distances:[],
+                rads:null,
+                offset:null,
+                time:null
+            };
+
+            this.animation;
+
             this.down = false;
             this.justUpped = false;
             this.baseCoord = {
@@ -132,7 +142,17 @@ var _exports = window;
             this.render();
         }
 
+        // taken via Google from http://jsfromhell.com/array/average
+        average(a) {
+            var r = {mean: 0, variance: 0, deviation: 0}, t = a.length;
+            for(var m, s = 0, l = t; l--; s += a[l]);
+            for(m = r.mean = s / t, l = t, s = 0; l--; s += Math.pow(a[l] - m, 2));
+            return r.deviation = Math.sqrt(r.variance = s / t), r;
+        }
+
         init() {
+
+
             let tempRow = null,
                 i, j;
 
@@ -217,6 +237,11 @@ var _exports = window;
         onMouseDown(e) {
             this.down = true;
             this.justUpped = false;
+
+            if(this.animation) {
+                this.animation.stop();
+            }
+
             this.baseCoord = {
                 x: (e.touches ? e.touches[0] : e).clientX,
                 y: (e.touches ? e.touches[0] : e).clientY,
@@ -225,13 +250,20 @@ var _exports = window;
                     y: parseInt(this.MOVER.getAttribute('data-translatey'))
                 }
             };
+
             this.delta = {x: 0, y: 0};
 
-            // EASE.offsetX = baseCoord.translate.x;
-            // EASE.offsetY = baseCoord.translate.y;
-            // animateEase = false;
-            // clearTimeout(time);
-            // time = null;
+            var offset = {
+                x: (e.touches ? e.touches[0] : e).clientX,
+                y: (e.touches ? e.touches[0] : e).clientY
+            };
+            this.dragData = {
+                time: (new Date).getTime(),
+                offset:offset,
+                last_spot:offset,
+                distances:[],
+                rads:[]
+            };
 
             return false;
         }
@@ -240,14 +272,41 @@ var _exports = window;
          * @param {Event} e
          * @returns {boolean}
          */
-        onMouseUp(e) {
+        onMouseUp(event) {
             this.down = false;
             this.justUpped = true;
+
+            var touchX = (event.touches ? event.touches[0] : event).clientX;
+            var touchY = (event.touches ? event.touches[0] : event).clientY;
+
+            var duration = ((new Date).getTime() - this.dragData.time);
+            var dist = this.average(this.dragData.distances.slice(-3)).mean * 10;
+            var rad = this.average(this.dragData.rads.slice(-3)).mean - Math.PI / 2;
+
+            var to_left = touchX + Math.sin(rad) * (-dist) - this.dragData.offset.x;
+            var to_top = touchY + Math.cos(rad) * dist - this.dragData.offset.y;
+
+            if(this.animation){
+                this.animation.stop();
+            }
+
+            this.animation = new Animate({
+                delay:1,
+                item:this.delta,
+                to:{
+                    x:to_left,
+                    y:to_top
+                },
+                duration:duration*2,
+                delta:Animate.easeOut(Animate.easeOutCirc)
+            });
+            this.animation.start();
 
             Utils.setAttributes(this.MOVER, {
                 'data-translatex': this.newTranslate.x,
                 'data-translatey': this.newTranslate.y
             });
+
             return false;
         }
 
@@ -255,14 +314,28 @@ var _exports = window;
          * @param {Event} e
          * @returns {boolean}
          */
-        onMouseMove(e) {
+        onMouseMove(event) {
             if (this.down) {
+
+                var touchX = (event.touches ? event.touches[0] : event).clientX;
+                var touchY = (event.touches ? event.touches[0] : event).clientY;
+
                 this.delta = {
-                    x: (e.touches ? e.touches[0] : e).clientX - this.baseCoord.x,
-                    y: (e.touches ? e.touches[0] : e).clientY - this.baseCoord.y
+                    x: touchX - this.baseCoord.x,
+                    y: touchY - this.baseCoord.y
                 };
 
-                // EASE.ms.tick(newTranslate.x, newTranslate.y);
+                var dist = Math.sqrt(Math.pow(this.dragData.last_spot.x - touchX, 2) + Math.pow(this.dragData.last_spot.y - touchY, 2));
+                this.dragData.distances.push(dist);
+
+                var cur_rad = Math.atan2(touchY - this.dragData.last_spot.y, touchX - this.dragData.last_spot.x);
+                this.dragData.rads.push(cur_rad);
+
+                this.dragData.last_spot = {
+                    x: touchX,
+                    y: touchY
+                };
+
                 return false;
             }
             return true;
@@ -356,34 +429,6 @@ var _exports = window;
             this.cacheTile.push(...rightRow);
         }
 
-        // launchEase() {
-        //     // this.animateEase = true;
-        //     //
-        //     // this.EASE.xSpeed = EASE.ms.xSpeed;
-        //     // EASE.ySpeed = EASE.ms.ySpeed;
-        //     // console.log('launchEase', EASE);
-        // }
-        //
-        // doEase() {
-        //     // let time = null;
-        //     // var doEase = () => { // RAF
-        //     //     console.log('doEase');
-        //     //
-        //     //     delta.x += EASE.xSpeed;
-        //     //     delta.y += EASE.ySpeed;
-        //     //
-        //     //     EASE.xSpeed *= EASE.friction;
-        //     //     EASE.ySpeed *= EASE.friction;
-        //     //     if (time == null) {
-        //     //         time = setTimeout(()=> {
-        //     //             animateEase = false;
-        //     //             time = null;
-        //     //         }, 2000);
-        //     //     }
-        //     //
-        //     // };
-        // }
-
         /**
          * Destroy the Infinite grid, including events and requestAnimationFrame loop.
          */
@@ -403,6 +448,9 @@ var _exports = window;
             delete this.MOVER;
             this.container = null;
             delete this.container;
+            if(this.animation){
+                this.animation.stop();
+            }
         }
 
         render() {
@@ -410,11 +458,6 @@ var _exports = window;
             var _innerRender = () => {
                 this.RAFid = requestAnimationFrame(_innerRender);
                 try {
-                    // if (justUpped && !animateEase) {
-                    //     launchEase();
-                    // } else if (animateEase) {
-                    //     doEase();
-                    // }
 
                     if (that.newTranslate.x > -(that.opts.buffer * (that.opts.tileSize.width * (2 / 3)))) {
                         that.removeRightColumn();
@@ -436,7 +479,6 @@ var _exports = window;
                         x: that.baseCoord.translate.x + that.delta.x,
                         y: that.baseCoord.translate.y + that.delta.y
                     };
-                    // EASE.ms.tick(newTranslate.x, newTranslate.y);
 
                     if (that.newTranslate.x !== that.prevTranslate.x || that.newTranslate.y !== that.prevTranslate.y) {
                         that.MOVER.style['transform'] = `translate3d(${that.newTranslate.x}px,${that.newTranslate.y}px, 0px)`;
@@ -454,6 +496,76 @@ var _exports = window;
                 }
             };
             _innerRender();
+        }
+    }
+
+    /**
+     * Animation tween & ease
+     */
+    class Animate {
+
+        constructor(opts){
+            this.opts  = opts;
+            this.timer = 0;
+        }
+
+        start()
+        {
+            this.from = {};
+            for(var b in this.opts.to)
+            {
+                this.from[b] = parseInt(this.opts.item[b]);
+            }
+            this.animate();
+        }
+
+        step(delta)
+        {
+            for(var b in this.opts.to) {
+                var v = Animate.delayer(this.opts.to[b],this.from[b],delta);
+                if(!isNaN(v)){
+                    this.opts.item[b] = v;
+                }
+            }
+        }
+
+        stop()
+        {
+            if(this.timer) {
+                clearInterval(this.timer)
+            }
+        }
+
+        animate() {
+            var start = (new Date).getTime();
+
+            this.timer = setInterval(function(scope) {
+                var timePassed = (new Date).getTime() - start;
+                var progress = timePassed / scope.opts.duration;
+                if (progress > 1) {
+                    progress = 1;
+                }
+                var delta = scope.opts.delta(progress);
+                scope.step(delta);
+
+                if (progress == 1) {
+                    scope.stop();
+                }
+            }, this.opts.delay || 10, this);
+        }
+
+        static easeOut(delta) {
+            return function(progress) {
+                return 1 - delta(1 - progress);
+            }
+        }
+
+        static easeOutCirc(progress) {
+            return 1 - Math.sin(Math.acos(progress))
+        }
+
+        static delayer(target,source,delay) {
+            return ((delay * (target-source)) + source);
         }
     }
 
@@ -566,5 +678,6 @@ var _exports = window;
     Utils.RANDOM_INDEX = Utils.RANDOM_SIZE_REFERENCE;
 
     InfiniteGrid.Utils = Utils;
+    InfiniteGrid.Animate = Animate;
     exports.InfiniteGrid = InfiniteGrid;
 })(_exports, _exports, window);
