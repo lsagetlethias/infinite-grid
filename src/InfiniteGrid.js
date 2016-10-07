@@ -113,7 +113,7 @@ var _exports = window;
                 time:null
             };
 
-            this.animation;
+            this.animation = null;
 
             this.down = false;
             this.justUpped = false;
@@ -142,17 +142,7 @@ var _exports = window;
             this.render();
         }
 
-        // taken via Google from http://jsfromhell.com/array/average
-        average(a) {
-            var r = {mean: 0, variance: 0, deviation: 0}, t = a.length;
-            for(var m, s = 0, l = t; l--; s += a[l]);
-            for(m = r.mean = s / t, l = t, s = 0; l--; s += Math.pow(a[l] - m, 2));
-            return r.deviation = Math.sqrt(r.variance = s / t), r;
-        }
-
         init() {
-
-
             let tempRow = null,
                 i, j;
 
@@ -254,8 +244,8 @@ var _exports = window;
             this.delta = {x: 0, y: 0};
 
             var offset = {
-                x: (e.touches ? e.touches[0] : e).clientX,
-                y: (e.touches ? e.touches[0] : e).clientY
+                x: this.baseCoord.x,
+                y: this.baseCoord.y
             };
             this.dragData = {
                 time: (new Date).getTime(),
@@ -272,16 +262,16 @@ var _exports = window;
          * @param {Event} e
          * @returns {boolean}
          */
-        onMouseUp(event) {
+        onMouseUp(e) {
             this.down = false;
             this.justUpped = true;
 
-            var touchX = (event.touches ? event.touches[0] : event).clientX;
-            var touchY = (event.touches ? event.touches[0] : event).clientY;
+            var touchX = (e.touches ? this.dragData.last_spot.x : e.clientX);
+            var touchY = (e.touches ? this.dragData.last_spot.y : e.clientY);
 
             var duration = ((new Date).getTime() - this.dragData.time);
-            var dist = this.average(this.dragData.distances.slice(-3)).mean * 10;
-            var rad = this.average(this.dragData.rads.slice(-3)).mean - Math.PI / 2;
+            var dist = Utils.average(this.dragData.distances.slice(-3)).mean * 10;
+            var rad = Utils.average(this.dragData.rads.slice(-3)).mean - Math.PI / 2;
 
             var to_left = touchX + Math.sin(rad) * (-dist) - this.dragData.offset.x;
             var to_top = touchY + Math.cos(rad) * dist - this.dragData.offset.y;
@@ -314,11 +304,11 @@ var _exports = window;
          * @param {Event} e
          * @returns {boolean}
          */
-        onMouseMove(event) {
+        onMouseMove(e) {
             if (this.down) {
 
-                var touchX = (event.touches ? event.touches[0] : event).clientX;
-                var touchY = (event.touches ? event.touches[0] : event).clientY;
+                var touchX = (e.touches ? e.touches[0] : e).clientX;
+                var touchY = (e.touches ? e.touches[0] : e).clientY;
 
                 this.delta = {
                     x: touchX - this.baseCoord.x,
@@ -341,6 +331,7 @@ var _exports = window;
             return true;
         }
 
+        //<editor-fold desc="Row manipulators" collapsed="true">
         addTopRow() {
             let row = ROW_TPL.cloneNode(false);
             for (let i = 0; i < this.MAX_BY_LINE + (this.opts.buffer*2); i++) {
@@ -428,6 +419,7 @@ var _exports = window;
             rightRow.forEach(el => el.parentNode.removeChild(el));
             this.cacheTile.push(...rightRow);
         }
+        //</editor-fold>
 
         /**
          * Destroy the Infinite grid, including events and requestAnimationFrame loop.
@@ -483,6 +475,11 @@ var _exports = window;
                     if (that.newTranslate.x !== that.prevTranslate.x || that.newTranslate.y !== that.prevTranslate.y) {
                         that.MOVER.style['transform'] = `translate3d(${that.newTranslate.x}px,${that.newTranslate.y}px, 0px)`;
                         that.prevTranslate = that.newTranslate;
+
+                        Utils.setAttributes(that.MOVER, {
+                            'data-translatex': that.newTranslate.x,
+                            'data-translatey': that.newTranslate.y
+                        });
                     } else {
                         if (that.justUpped) {
                             that.opts.onRelease && that.opts.onRelease();
@@ -671,6 +668,17 @@ var _exports = window;
                 }
                 return target;
             }
+        }
+
+        static average(a) {
+            var r = {
+                mean: 0,
+                variance: 0,
+                deviation: 0
+            }, t = a.length;
+            for (var m, s = 0, l = t; l--; s += a[l]) {}
+            for (m = r.mean = s / t, l = t, s = 0; l--; s += Math.pow(a[l] - m, 2)) {}
+            return r.deviation = Math.sqrt(r.variance = s / t), r;
         }
     }
     Utils.THE_RANDOM_ARRAY = [];
