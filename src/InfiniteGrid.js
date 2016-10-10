@@ -3,6 +3,9 @@
 var _exports = window;
 
 ((module, exports, root) => {
+    const   Math = root.Math,
+            Date = root.Date;
+
     const   _CLASS_TILE = 'IG-tile',
             _ID_MOVER = 'IG-mover',
             _CLASS_TILE_CONTENT = 'IG-tileContent',
@@ -49,6 +52,10 @@ var _exports = window;
          * @param {tileTemplateCallback} [options.tileTemplate] - A function given to generate each tile
          * @param {onReleaseCallback} [options.onRelease] - A function given called when the grid stop moving
          * @param {!HTMLElement} [options.insertBefore] - A function given called when the grid stop moving
+         * @param {Object} [options.duration] - Ease animation parameters
+         * @param {!boolean} [options.duration.active=true] - Active ease animation
+         * @param {!number} [options.duration.durationFactor=2] - Factor of time duration, higher = longer
+         * @param {!number} [options.duration.reverseFPS=0.06] - More delay, less FPS
          */
         constructor(container, options) {
             this.MOVER = Utils.setAttributes(document.createElement('table'), {'id': _ID_MOVER});
@@ -70,10 +77,15 @@ var _exports = window;
                         class="${_CLASS_TILE_CONTENT}">&nbsp;</div>`;
                 },
                 onRelease: () => {},
-                insertBefore: null
+                insertBefore: null,
+                ease: {
+                    active: true,
+                    durationFactor: 2,
+                    reverseFPS: 60/1000
+                }
             };
             if (options) {
-                this.opts = Utils.extend(this.opts, options)
+                this.opts = Utils.extend(this.opts, options);
             }
             this.container = container;
             if(this.opts.insertBefore ) {
@@ -103,8 +115,18 @@ var _exports = window;
 
             this.init();
 
-
             /* EVENTS */
+
+            this.dragData = {
+                last_spot: {x: 0, y: 0},
+                distances: [],
+                rads: null,
+                offset: null,
+                time: null
+            };
+
+            this.animation = null;
+
             this.down = false;
             this.justUpped = false;
             this.baseCoord = {
@@ -190,15 +212,6 @@ var _exports = window;
         }
 
         initEvents() {
-            // var animateEase = false,
-            //     EASE = {
-            //         ms: new MouseSpeed,
-            //         xSpeed: 0,
-            //         ySpeed: 0,
-            //         friction: .82,
-            //         offsetX: 0,
-            //         offsetY: 0
-            //     };
             Utils.addEventListenerMulti(this.MOVER, 'mousedown touchstart', this.onmousedownProxy);
             Utils.addEventListenerMulti(document, 'mouseup touchend', this.onmouseupProxy);
             Utils.addEventListenerMulti(document, 'mousemove touchmove', this.onmousemoveProxy);
@@ -211,12 +224,17 @@ var _exports = window;
         }
 
         /**
-         * @param {Event} e
+         * @param {Event|{touches}} e
          * @returns {boolean}
          */
         onMouseDown(e) {
             this.down = true;
             this.justUpped = false;
+
+            if(this.opts.ease.active && this.animation) {
+                this.animation.stop();
+            }
+
             this.baseCoord = {
                 x: (e.touches ? e.touches[0] : e).clientX,
                 y: (e.touches ? e.touches[0] : e).clientY,
@@ -225,49 +243,103 @@ var _exports = window;
                     y: parseInt(this.MOVER.getAttribute('data-translatey'))
                 }
             };
-            this.delta = {x: 0, y: 0};
 
-            // EASE.offsetX = baseCoord.translate.x;
-            // EASE.offsetY = baseCoord.translate.y;
-            // animateEase = false;
-            // clearTimeout(time);
-            // time = null;
+            this.delta = {x: 0, y: 0};
+            if (this.opts.ease.active) {
+
+                let offset = {
+                    x: this.baseCoord.x,
+                    y: this.baseCoord.y
+                };
+                this.dragData = {
+                    time: Date.now(),
+                    offset: offset,
+                    last_spot: offset,
+                    distances: [],
+                    rads: []
+                };
+            }
 
             return false;
         }
 
         /**
-         * @param {Event} e
+         * @param {Event|{touches}} e
          * @returns {boolean}
          */
         onMouseUp(e) {
             this.down = false;
             this.justUpped = true;
 
+            let touchX = (e.touches ? this.dragData.last_spot.x : e.clientX),
+                touchY = (e.touches ? this.dragData.last_spot.y : e.clientY);
+
+            if (this.opts.ease.active) {
+                let duration = Date.now() - this.dragData.time,
+                    dist = Utils.average(this.dragData.distances.slice(-3)).mean * 10,
+                    rad = Utils.average(this.dragData.rads.slice(-3)).mean - Math.PI / 2,
+
+                    to_left = touchX + Math.sin(rad) * (-dist) - this.dragData.offset.x,
+                    to_top = touchY + Math.cos(rad) * dist - this.dragData.offset.y;
+
+                if (this.animation) {
+                    this.animation.stop();
+                }
+
+                this.animation = new Animate({
+                    delay: this.opts.ease.reverseFPS,
+                    item: this.delta,
+                    to: {
+                        x: to_left,
+                        y: to_top
+                    },
+                    duration: duration * this.opts.ease.durationFactor
+                });
+                this.animation.start();
+            }
+
             Utils.setAttributes(this.MOVER, {
                 'data-translatex': this.newTranslate.x,
                 'data-translatey': this.newTranslate.y
             });
+
             return false;
         }
 
         /**
-         * @param {Event} e
+         * @param {Event|{touches}} e
          * @returns {boolean}
          */
         onMouseMove(e) {
             if (this.down) {
+
+                let touchX = (e.touches ? e.touches[0] : e).clientX,
+                    touchY = (e.touches ? e.touches[0] : e).clientY;
+
                 this.delta = {
-                    x: (e.touches ? e.touches[0] : e).clientX - this.baseCoord.x,
-                    y: (e.touches ? e.touches[0] : e).clientY - this.baseCoord.y
+                    x: touchX - this.baseCoord.x,
+                    y: touchY - this.baseCoord.y
                 };
 
-                // EASE.ms.tick(newTranslate.x, newTranslate.y);
+                if (this.opts.ease.active) {
+                    let dist = Math.sqrt(Math.pow(this.dragData.last_spot.x - touchX, 2) + Math.pow(this.dragData.last_spot.y - touchY, 2));
+                    this.dragData.distances.push(dist);
+
+                    let cur_rad = Math.atan2(touchY - this.dragData.last_spot.y, touchX - this.dragData.last_spot.x);
+                    this.dragData.rads.push(cur_rad);
+                }
+
+                this.dragData.last_spot = {
+                    x: touchX,
+                    y: touchY
+                };
+
                 return false;
             }
             return true;
         }
 
+        //<editor-fold desc="Row manipulators" collapsed="true">
         addTopRow() {
             let row = ROW_TPL.cloneNode(false);
             for (let i = 0; i < this.MAX_BY_LINE + (this.opts.buffer*2); i++) {
@@ -355,34 +427,7 @@ var _exports = window;
             rightRow.forEach(el => el.parentNode.removeChild(el));
             this.cacheTile.push(...rightRow);
         }
-
-        // launchEase() {
-        //     // this.animateEase = true;
-        //     //
-        //     // this.EASE.xSpeed = EASE.ms.xSpeed;
-        //     // EASE.ySpeed = EASE.ms.ySpeed;
-        //     // console.log('launchEase', EASE);
-        // }
-        //
-        // doEase() {
-        //     // let time = null;
-        //     // var doEase = () => { // RAF
-        //     //     console.log('doEase');
-        //     //
-        //     //     delta.x += EASE.xSpeed;
-        //     //     delta.y += EASE.ySpeed;
-        //     //
-        //     //     EASE.xSpeed *= EASE.friction;
-        //     //     EASE.ySpeed *= EASE.friction;
-        //     //     if (time == null) {
-        //     //         time = setTimeout(()=> {
-        //     //             animateEase = false;
-        //     //             time = null;
-        //     //         }, 2000);
-        //     //     }
-        //     //
-        //     // };
-        // }
+        //</editor-fold>
 
         /**
          * Destroy the Infinite grid, including events and requestAnimationFrame loop.
@@ -403,6 +448,12 @@ var _exports = window;
             delete this.MOVER;
             this.container = null;
             delete this.container;
+
+            if(this.animation) {
+                this.animation.stop();
+            }
+            this.animation = null;
+            delete this.animation;
         }
 
         render() {
@@ -410,11 +461,6 @@ var _exports = window;
             var _innerRender = () => {
                 this.RAFid = requestAnimationFrame(_innerRender);
                 try {
-                    // if (justUpped && !animateEase) {
-                    //     launchEase();
-                    // } else if (animateEase) {
-                    //     doEase();
-                    // }
 
                     if (that.newTranslate.x > -(that.opts.buffer * (that.opts.tileSize.width * (2 / 3)))) {
                         that.removeRightColumn();
@@ -436,11 +482,17 @@ var _exports = window;
                         x: that.baseCoord.translate.x + that.delta.x,
                         y: that.baseCoord.translate.y + that.delta.y
                     };
-                    // EASE.ms.tick(newTranslate.x, newTranslate.y);
 
                     if (that.newTranslate.x !== that.prevTranslate.x || that.newTranslate.y !== that.prevTranslate.y) {
                         that.MOVER.style['transform'] = `translate3d(${that.newTranslate.x}px,${that.newTranslate.y}px, 0px)`;
                         that.prevTranslate = that.newTranslate;
+
+                        if (that.opts.ease.active) {
+                            Utils.setAttributes(that.MOVER, {
+                                'data-translatex': that.newTranslate.x,
+                                'data-translatey': that.newTranslate.y
+                            });
+                        }
                     } else {
                         if (that.justUpped) {
                             that.opts.onRelease && that.opts.onRelease();
@@ -454,6 +506,106 @@ var _exports = window;
                 }
             };
             _innerRender();
+        }
+    }
+
+    /**
+     * Animation tween & ease
+     */
+    class Animate {
+        constructor(opts) {
+            this.opts = {
+                delay: 1,
+                item: {x: 0, y: 0},
+                to:{x: 0, y: 0},
+                duration: 2,
+                delta: Animate.easeOut(Animate.easeOutCirc)
+            };
+            if (opts) {
+                this.opts = Utils.extend(this.opts, opts);
+            }
+            this.timer = 0;
+            this.from = {};
+        }
+
+        start() {
+            for(let b in this.opts.to) {
+                this.from[b] = parseInt(this.opts.item[b]);
+            }
+            this.animate();
+        }
+
+        step(delta) {
+            for(let b in this.opts.to) {
+                let v = Animate.delayer(this.opts.to[b], this.from[b], delta);
+                if(!isNaN(v)) {
+                    this.opts.item[b] = v;
+                }
+            }
+        }
+
+        stop() {
+            if(this.timer) {
+                clearInterval(this.timer)
+            }
+        }
+
+        animate() {
+            let start = Date.now(),
+                timePassed = 0,
+                progress = 0,
+                delta = 0;
+
+            this.timer = setInterval(() => {
+                timePassed = Date.now() - start;
+                progress = timePassed / this.opts.duration;
+                if (progress > 1) {
+                    progress = 1;
+                }
+                delta = this.opts.delta(progress);
+                this.step(delta);
+
+                if (progress == 1) {
+                    this.stop();
+                }
+            }, this.opts.delay || 10);
+        }
+
+        static easeOut(delta) {
+            return progress => 1 - delta(1 - progress);
+        }
+
+        static easeOutCirc(progress) {
+            return 1 - Math.sin(Math.acos(progress))
+        }
+
+        static linear(progress) {
+            return progress;
+        }
+
+        static easeInOutQuint(progress) {
+            return progress<.5 ? 16*progress*progress*progress*progress*progress : 1+16*(--progress)*progress*progress*progress*progress;
+        }
+
+        static easeOutQuint(progress) {
+            return 1+(--progress)*progress*progress*progress*progress;
+        }
+
+        static easeOutQuad(progress) {
+            return progress*(2-progress);
+        }
+
+        static easeOutQuart(progress) {
+            return 1-(--progress)*progress*progress*progress;
+        }
+
+        static easeOutElastic(progress) {
+            var p = 0.3;
+            return Math.pow(2,-10*progress) * Math.sin((progress-p/4)*(2*Math.PI)/p) + 1;
+        }
+
+        static delayer(target, source, delay) {
+            return delay * (target - source) + source;
         }
     }
 
@@ -560,11 +712,48 @@ var _exports = window;
                 return target;
             }
         }
+
+        /**
+         * Calculates the mean, standard deviation and variance in an array.
+         * The old way.
+         *
+         * @param {Array} a
+         */
+        static average2(a) {
+            var r = {
+                mean: 0,
+                variance: 0,
+                deviation: 0
+            }, t = a.length;
+            for (var m, s = 0, l = t; l--; s += a[l]) {}
+            for (m = r.mean = s / t, l = t, s = 0; l--; s += Math.pow(a[l] - m, 2)) {}
+            return r.deviation = Math.sqrt(r.variance = s / t), r;
+        }
+
+        /**
+         * Calculates the mean, standard deviation and variance in an array.
+         * ES6 way.
+         *
+         * @param {Array} a
+         */
+        static average(a) {
+            const meanFn = arr => arr.reduce((p, c) => p + c, 0) / arr.length;
+            let mean = meanFn(a),
+                variance = meanFn(a.map(num => Math.pow(num - mean, 2))),
+                deviation = Math.sqrt(variance);
+
+            return {
+                mean: mean,
+                variance: variance,
+                deviation: deviation
+            }
+        }
     }
     Utils.THE_RANDOM_ARRAY = [];
     Utils.RANDOM_SIZE_REFERENCE = 1e6;
     Utils.RANDOM_INDEX = Utils.RANDOM_SIZE_REFERENCE;
 
     InfiniteGrid.Utils = Utils;
+    InfiniteGrid.Animate = Animate;
     exports.InfiniteGrid = InfiniteGrid;
 })(_exports, _exports, window);
