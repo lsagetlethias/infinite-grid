@@ -3,7 +3,10 @@
   "authors": [
     "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com>"
   ],
-  "contributors": ["Anthony Capirchio (http://github.com/AnthonyCapirchio)"],
+  "contributors": [
+    "Cyril Pereira (https://github.com/funkymed)",
+    "Anthony Capirchio (http://github.com/AnthonyCapirchio)"
+  ],
   "description": "InfiniteGrid layout",
   "main": [
     "bin/build.js",

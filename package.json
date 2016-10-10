@@ -1,9 +1,12 @@
 {
   "name": "infinite-grid",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "InfiniteGrid layout",
   "author": "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com> (http://github.com/bios21)",
-  "contributors": ["Anthony Capirchio (http://github.com/AnthonyCapirchio)"],
+  "contributors": [
+    "Cyril Pereira (https://github.com/funkymed)",
+    "Anthony Capirchio (http://github.com/AnthonyCapirchio)"
+  ],
   "license": "MIT",
   "devDependencies": {
     "babel": "^6.5.2",
