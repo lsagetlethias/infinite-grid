@@ -7,7 +7,7 @@ const   gulp = require('gulp'),
         sourcemaps = require('gulp-sourcemaps');
 
 
-gulp.task('build', ['clean'], () => {
+gulp.task('_build', () => {
     gulp.src('src/**/*.js')
         .pipe(sourcemaps.init())
         .pipe(babel({
@@ -40,12 +40,13 @@ gulp.task('release', ['build'], () => {
 });
 
 gulp.task('clean', () => {
-    return gulp.src(['bin/*', 'dist/*', 'temp'], {read: false})
+    gulp.src(['bin/*', 'dist/*', 'temp'], {read: false})
         .pipe(clean());
 });
 
 gulp.task('watch', ['build'], () => {
-    gulp.watch('src/**/*.js', ['build']);
+    gulp.watch('src/**/*.js', ['_build']);
 });
 
 gulp.task('default', ['watch']);
+gulp.task('build', ['clean', '_build']);
