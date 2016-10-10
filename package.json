@@ -1,6 +1,6 @@
 {
   "name": "infinite-grid",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "InfiniteGrid layout",
   "author": "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com> (http://github.com/bios21)",
   "contributors": [
@@ -24,7 +24,10 @@
   "keywords": [
     "infinite",
     "grid",
+    "scroll",
     "layout",
-    "vanilla"
+    "vanilla",
+    "noplugin",
+    "nojquery"
   ]
 }

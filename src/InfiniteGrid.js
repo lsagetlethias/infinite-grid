@@ -52,10 +52,10 @@ var _exports = window;
          * @param {tileTemplateCallback} [options.tileTemplate] - A function given to generate each tile
          * @param {onReleaseCallback} [options.onRelease] - A function given called when the grid stop moving
          * @param {!HTMLElement} [options.insertBefore] - A function given called when the grid stop moving
-         * @param {Object} [options.duration] - Ease animation parameters
-         * @param {!boolean} [options.duration.active=true] - Active ease animation
-         * @param {!number} [options.duration.durationFactor=2] - Factor of time duration, higher = longer
-         * @param {!number} [options.duration.reverseFPS=0.06] - More delay, less FPS
+         * @param {Object} [options.ease] - Ease animation parameters
+         * @param {!boolean} [options.ease.active=true] - Active ease animation
+         * @param {!number} [options.ease.durationFactor=2] - Factor of time duration, higher = longer
+         * @param {!number} [options.ease.reverseFPS=0.06] - More delay, less FPS
          */
         constructor(container, options) {
             this.MOVER = Utils.setAttributes(document.createElement('table'), {'id': _ID_MOVER});
@@ -268,13 +268,18 @@ var _exports = window;
          * @returns {boolean}
          */
         onMouseUp(e) {
+            let preventAnim = true;
+            if (this.down) {
+                preventAnim = false;
+            }
+
             this.down = false;
             this.justUpped = true;
 
             let touchX = (e.touches ? this.dragData.last_spot.x : e.clientX),
                 touchY = (e.touches ? this.dragData.last_spot.y : e.clientY);
 
-            if (this.opts.ease.active) {
+            if (this.opts.ease.active && !preventAnim) {
                 let duration = Date.now() - this.dragData.time,
                     dist = Utils.average(this.dragData.distances.slice(-3)).mean * 10,
                     rad = Utils.average(this.dragData.rads.slice(-3)).mean - Math.PI / 2,
@@ -296,12 +301,12 @@ var _exports = window;
                     duration: duration * this.opts.ease.durationFactor
                 });
                 this.animation.start();
+            } else {
+                Utils.setAttributes(this.MOVER, {
+                    'data-translatex': this.newTranslate.x,
+                    'data-translatey': this.newTranslate.y
+                });
             }
-
-            Utils.setAttributes(this.MOVER, {
-                'data-translatex': this.newTranslate.x,
-                'data-translatey': this.newTranslate.y
-            });
 
             return false;
         }
